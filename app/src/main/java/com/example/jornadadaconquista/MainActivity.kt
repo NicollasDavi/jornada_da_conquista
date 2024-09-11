@@ -1,213 +1,210 @@
 package com.example.jornadadaconquista
 
-import android.app.Activity
-import android.graphics.Color
-import android.graphics.Typeface
 import android.os.Bundle
-import android.view.Gravity
-import android.view.ViewGroup
-import android.widget.Button
-import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.TextView
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.saveable.rememberSaveable
 
-class MainActivity : Activity() {
-
-    private lateinit var imageView: ImageView
-    private lateinit var textView: TextView
-    private lateinit var buttonDislike: Button
-    private lateinit var buttonLike: Button
-    private lateinit var buttonYes: Button
-    private lateinit var buttonNo: Button
-
-    private var clicks = 0
-    private var targetClicks = (0..10).random()
-
+class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setContent {
+            var clicks by rememberSaveable { mutableStateOf(0) }
+            var isGameStarted by rememberSaveable { mutableStateOf(false) }  // Indica se o jogo já começou
+            var totalClicks by rememberSaveable { mutableStateOf(0) }  // Total de cliques aleatórios
+            var phaseClicks by rememberSaveable { mutableStateOf(0) }  // Cliques por fase (gerado ao iniciar o jogo)
+            var gameState by rememberSaveable { mutableStateOf(GameState.Playing) }
+            var currentPhase by rememberSaveable { mutableStateOf(0) }  // Fase inicial
+            var message by rememberSaveable { mutableStateOf("Clique no coração para iniciar a jornada!") }
+            var imageResource by rememberSaveable { mutableStateOf(R.drawable.fundo) }
 
-        val mainLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            layoutParams = ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
+            JourneyApp(
+                clicks = clicks,
+                totalClicks = totalClicks,
+                phaseClicks = phaseClicks,
+                isGameStarted = isGameStarted,
+                currentPhase = currentPhase,
+                gameState = gameState,
+                imageResource = imageResource,
+                message = message,
+                onClicksUpdate = { clicks = it },
+                onGameStart = { isGameStarted = it },
+                onTotalClicksUpdate = { totalClicks = it },
+                onPhaseUpdate = { currentPhase = it },
+                onGameStateUpdate = { gameState = it },
+                onImageResourceUpdate = { imageResource = it },
+                onMessageUpdate = { message = it },
+                onPhaseClicksUpdate = { phaseClicks = it }
             )
-            setBackgroundColor(Color.parseColor("#F5F5F5"))
-            setPadding(16, 16, 16, 16)
         }
-
-        imageView = ImageView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                0,
-                1f
-            )
-            setImageResource(R.drawable.fundo)
-            scaleType = ImageView.ScaleType.CENTER_CROP
-        }
-
-        textView = TextView(this).apply {
-            text = "Clique para avançar na sua jornada!"
-            textSize = 26f
-            gravity = Gravity.CENTER
-            setTextColor(Color.WHITE)
-            setTypeface(typeface, Typeface.BOLD)
-            setPadding(20, 20, 20, 20)
-            setShadowLayer(4f, 2f, 2f, Color.BLACK)
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            )
-            setBackgroundColor(Color.parseColor("#80000000"))
-        }
-
-        buttonDislike = Button(this).apply {
-            text = "×"
-            textSize = 36f
-            setBackgroundColor(Color.TRANSPARENT)
-            setTextColor(Color.RED)
-            setTypeface(typeface, Typeface.BOLD)
-            layoutParams = LinearLayout.LayoutParams(
-                0,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                1f
-            ).apply {
-                setMargins(16, 16, 16, 16)
-            }
-            setOnClickListener {
-                textView.text = "Você desistiu! Deseja tentar novamente?"
-                imageView.setImageResource(R.drawable._4)
-                showRestartOptions()
-            }
-        }
-
-        buttonLike = Button(this).apply {
-            text = "♥"
-            textSize = 36f
-            setBackgroundColor(Color.TRANSPARENT)
-            setTextColor(Color.GREEN)
-            setTypeface(typeface, Typeface.BOLD)
-            layoutParams = LinearLayout.LayoutParams(
-                0,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                1f
-            ).apply {
-                setMargins(16, 16, 16, 16)
-            }
-            setOnClickListener {
-                clicks++
-                handleLikeClick()
-            }
-        }
-
-        buttonYes = Button(this).apply {
-            text = "Sim"
-            textSize = 18f
-            setBackgroundColor(Color.GREEN)
-            setTextColor(Color.WHITE)
-            visibility = Button.GONE
-            setTypeface(typeface, Typeface.BOLD)
-            layoutParams = LinearLayout.LayoutParams(
-                0,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                1f
-            ).apply {
-                setMargins(16, 16, 16, 16)
-            }
-            setOnClickListener {
-                resetGame()
-            }
-        }
-
-        buttonNo = Button(this).apply {
-            text = "Não"
-            textSize = 18f
-            setBackgroundColor(Color.RED)
-            setTextColor(Color.WHITE)
-            visibility = Button.GONE
-            setTypeface(typeface, Typeface.BOLD)
-            layoutParams = LinearLayout.LayoutParams(
-                0,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                1f
-            ).apply {
-                setMargins(16, 16, 16, 16)
-            }
-            setOnClickListener {
-                finish()
-            }
-        }
-
-        val buttonRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            )
-            addView(buttonDislike)
-            addView(buttonLike)
-        }
-
-        val restartButtonRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            )
-            addView(buttonYes)
-            addView(buttonNo)
-        }
-
-        mainLayout.addView(imageView)
-        mainLayout.addView(textView)
-        mainLayout.addView(buttonRow)
-        mainLayout.addView(restartButtonRow)
-
-        setContentView(mainLayout)
     }
+}
 
-    private fun handleLikeClick() {
-        when {
-            clicks >= targetClicks -> {
-                textView.text = "Parabéns! Você conquistou a Gal Gadot!"
-                imageView.setImageResource(R.drawable._4)
-            }
-            clicks > targetClicks * 0.66 -> {
-                textView.text = "Ela está gostando de você!"
-                imageView.setImageResource(R.drawable._3)
-            }
-            clicks > targetClicks * 0.33 -> {
-                textView.text = "Você a chamou pra sair!"
-                imageView.setImageResource(R.drawable._2)
-            }
-            else -> {
-                textView.text = "Você conheceu a Gal Gadot!"
-                imageView.setImageResource(R.drawable._1)
+@Composable
+fun JourneyApp(
+    clicks: Int,
+    totalClicks: Int,
+    phaseClicks: Int,
+    isGameStarted: Boolean,
+    currentPhase: Int,
+    gameState: GameState,
+    imageResource: Int,
+    message: String,
+    onClicksUpdate: (Int) -> Unit,
+    onGameStart: (Boolean) -> Unit,
+    onTotalClicksUpdate: (Int) -> Unit,
+    onPhaseUpdate: (Int) -> Unit,
+    onGameStateUpdate: (GameState) -> Unit,
+    onImageResourceUpdate: (Int) -> Unit,
+    onMessageUpdate: (String) -> Unit,
+    onPhaseClicksUpdate: (Int) -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Image(
+                painter = painterResource(id = imageResource),
+                contentDescription = null,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+            )
+            Text(
+                text = message,
+                fontSize = 24.sp,
+                color = Color.Black,
+                fontWeight = FontWeight.Medium,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+
+            when (gameState) {
+                GameState.Playing -> ActionButtons(
+                    isGameStarted, clicks, totalClicks, phaseClicks, currentPhase,
+                    onHeartClick = {
+                        if (!isGameStarted) {
+                            // O jogo começa: gerar cliques totais e por fase
+                            onGameStart(true)
+                            val randomTotalClicks = (15..30).random()
+                            onTotalClicksUpdate(randomTotalClicks)
+                            onPhaseClicksUpdate(randomTotalClicks / 4)  // Dividir os cliques por fase
+                            onMessageUpdate("Você conheceu a Gal Gadot!")
+                            onImageResourceUpdate(R.drawable._1)
+                        } else {
+                            onClicksUpdate(clicks + 1)
+                            checkPhase(clicks + 1, totalClicks, phaseClicks, currentPhase, onPhaseUpdate, onImageResourceUpdate, onMessageUpdate)
+                        }
+                    },
+                    onCrossClick = { onGameStateUpdate(GameState.Restarting) }
+                )
+                GameState.Restarting -> RestartButtons(
+                    onRestart = {
+                        onClicksUpdate(0)
+                        onGameStart(false)  // Reiniciar como se o jogo não tivesse começado
+                        onPhaseUpdate(0)  // Volta para a fase inicial (fundo padrão)
+                        onMessageUpdate("Clique no coração para iniciar a jornada!")
+                        onImageResourceUpdate(R.drawable.fundo)
+                        onGameStateUpdate(GameState.Playing)
+                    }
+                )
             }
         }
     }
+}
 
-    private fun showRestartOptions() {
-        buttonYes.visibility = Button.VISIBLE
-        buttonNo.visibility = Button.VISIBLE
-
-        buttonDislike.visibility = Button.GONE
-        buttonLike.visibility = Button.GONE
+@Composable
+fun ActionButtons(
+    isGameStarted: Boolean, clicks: Int, totalClicks: Int, phaseClicks: Int, currentPhase: Int, onHeartClick: () -> Unit, onCrossClick: () -> Unit
+) {
+    Row {
+        Button(
+            onClick = onCrossClick,
+            modifier = Modifier
+                .padding(horizontal = 16.dp)
+        ) {
+            Text("×", fontSize = 36.sp)
+        }
+        Spacer(modifier = Modifier.width(16.dp))
+        Button(
+            onClick = onHeartClick,
+            modifier = Modifier
+                .padding(horizontal = 16.dp)
+        ) {
+            Text(if (isGameStarted) "♥" else "Iniciar", fontSize = 36.sp)
+        }
     }
+}
 
-    private fun resetGame() {
-        clicks = 0
-        targetClicks = (0..10).random()
-        textView.text = "Clique para avançar na sua jornada!"
-        imageView.setImageResource(R.drawable.fundo)
-
-        buttonDislike.visibility = Button.VISIBLE
-        buttonLike.visibility = Button.VISIBLE
-
-        buttonYes.visibility = Button.GONE
-        buttonNo.visibility = Button.GONE
+@Composable
+fun RestartButtons(onRestart: () -> Unit) {
+    Row {
+        Button(
+            onClick = onRestart,
+            modifier = Modifier
+                .padding(horizontal = 16.dp)
+        ) {
+            Text("Sim", fontSize = 18.sp)
+        }
+        Spacer(modifier = Modifier.width(16.dp))
+        Button(
+            onClick = { /* Não faz nada ao clicar em "Não" */ },
+            modifier = Modifier
+                .padding(horizontal = 16.dp)
+        ) {
+            Text("Não", fontSize = 18.sp)
+        }
     }
+}
+
+fun checkPhase(
+    clicks: Int, totalClicks: Int, phaseClicks: Int, currentPhase: Int,
+    onPhaseUpdate: (Int) -> Unit, onUpdateImage: (Int) -> Unit, onUpdateMessage: (String) -> Unit
+) {
+    when {
+        clicks >= totalClicks -> {
+            onPhaseUpdate(4)
+            onUpdateImage(R.drawable._4)
+            onUpdateMessage("Parabéns! Você conquistou a Gal Gadot!")
+        }
+        clicks >= phaseClicks * 3 -> {
+            onPhaseUpdate(3)
+            onUpdateImage(R.drawable._3)
+            onUpdateMessage("Ela está gostando de você!")
+        }
+        clicks >= phaseClicks * 2 -> {
+            onPhaseUpdate(2)
+            onUpdateImage(R.drawable._2)
+            onUpdateMessage("Você a chamou pra sair!")
+        }
+        clicks >= phaseClicks -> {
+            onPhaseUpdate(1)
+            onUpdateImage(R.drawable._1)
+            onUpdateMessage("Você conheceu a Gal Gadot!")
+        }
+    }
+}
+
+enum class GameState {
+    Playing, Restarting
 }
